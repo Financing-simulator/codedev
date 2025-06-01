@@ -1,1 +1,13 @@
-<p>cnpj works!</p>
+<div class="cnpj-container">
+  <input
+    type="text"
+    placeholder="Digite o CNPJ"
+    [(ngModel)]="cnpj"
+    maxlength="18"
+  />
+
+  <button (click)="gerarCnpj()">Gerar</button>
+  <button (click)="validarCnpj()">Validar</button>
+</div>
+
+<p *ngIf="mensagem" class="mensagem">{{ mensagem }}</p> 

@@ -1,28 +1,42 @@
-import { Component } from '@angular/core';
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { FormsModule } from '@angular/forms';  // <-- importe aqui
-import { RouterModule } from '@angular/router'; 
-import { ActivatedRoute } from '@angular/router';
+import { Component, Inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { RouterModule, ActivatedRoute } from '@angular/router';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-cpf',
-  imports: [ FormsModule ,FormsModule, RouterModule],
   standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterModule,
+    HttpClientModule
+  ],
   templateUrl: './cpf.component.html',
-  styleUrl: './cpf.component.scss'
+  styleUrls: ['./cpf.component.scss']
 })
 export class CpfComponent {
-  constructor(private route: ActivatedRoute) {}  
-
   cpf: string = '';
   mensagem: string = '';
 
+  constructor(
+    private route: ActivatedRoute,
+    private http: HttpClient,
+    @Inject('APP_CONFIG') private config: { apiUrl: string }
+  ) {}
+
   gerarCpf(): void {
-    // Gera um CPF simples aleatório só para exemplo
-    const n = () => Math.floor(Math.random() * 9);
-    this.cpf = `${n()}${n()}${n()}.${n()}${n()}${n()}.${n()}${n()}${n()}-${n()}${n()}`;
-    this.mensagem = '';
+    this.http.get(this.config.apiUrl + '/cpf-cnpj/generate-cpf', { responseType: 'text' })
+      .subscribe({
+        next: (cpf: string) => {
+          this.cpf = cpf;
+          this.mensagem = '';
+        },
+        error: () => {
+          this.mensagem = 'Erro ao gerar CPF.';
+        }
+      });
   }
 
   validarCpf(): void {
@@ -30,12 +44,18 @@ export class CpfComponent {
       this.mensagem = 'Por favor, insira um CPF.';
       return;
     }
-    // Validação básica só pra demo (deve implementar validação real)
-    const regex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
-    if (regex.test(this.cpf)) {
-      this.mensagem = 'CPF válido!';
-    } else {
-      this.mensagem = 'CPF inválido! Formato esperado: XXX.XXX.XXX-XX';
-    }
+
+    const url = `${this.config.apiUrl}/cpf-cnpj/validate?cpf=${encodeURIComponent(this.cpf)}`;
+    console.log(url);
+
+    this.http.get<boolean>(url)
+      .subscribe({
+        next: (valido) => {
+          this.mensagem = valido ? 'CPF válido!' : 'CPF inválido!';
+        },
+        error: () => {
+          this.mensagem = 'Erro ao validar CPF.';
+        }
+      });
   }
 }
